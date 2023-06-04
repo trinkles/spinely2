@@ -79,11 +79,36 @@ function createPostureTable($postureName) {
 
 // Send the calibration command to Arduino
 function sendCalibrationCommand() {
-  // Implement the code to send the calibration command to Arduino
-  // This could be through a serial communication or any other method
-  // specific to your Arduino setup.
-  // Example: Serial.write("CALIBRATE");
-}
+    // Arduino IP address and port
+    $arduinoIP = '192.168.1.100';
+    $arduinoPort = 80;
+  
+    // Command to send to Arduino
+    $command = 'calibration';
+  
+    // Create a cURL resource
+    $ch = curl_init();
+  
+    // Set the cURL options
+    curl_setopt($ch, CURLOPT_URL, "http://{$arduinoIP}:{$arduinoPort}/");
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $command);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  
+    // Execute the cURL request
+    $response = curl_exec($ch);
+  
+    // Check for errors
+    if ($response === false) {
+      die('Failed to send command to Arduino: ' . curl_error($ch));
+    }
+  
+    // Close the cURL resource
+    curl_close($ch);
+  
+    // Display the response from Arduino
+    echo 'Command sent to Arduino: ' . $command;
+  }  
 
 ?>
 
