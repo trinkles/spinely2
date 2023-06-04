@@ -5,7 +5,7 @@ const char* ssid = "YourWiFiSSID";
 const char* password = "YourWiFiPassword";
 const char* serverIP = "192.168.1.100";
 const int serverPort = 80;
-const char* endpoint = "/update.php";
+const char* endpoint = "/functions.php";
 const char* deviceName = "MyDevice";
 const char* deviceIP = "192.168.1.200";
 
