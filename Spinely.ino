@@ -6,12 +6,14 @@ const char* password = "YourWiFiPassword";
 const char* serverIP = "192.168.1.100";
 const int serverPort = 80;
 const char* deviceEndpoint = "/device.php";
-const char* sensorDataEndpoint = "/receive_sensor_data.php";
-const char* anglesEndpoint = "/angles.php";
+const char* choicesEndpoint = "/choices.php";
+const char* calibrationEndpoint = "/calibration.php";
+const char* monitoringEndpoint = "/monitoring.php";
 const char* deviceName = "MyDevice";
 const char* deviceIP = "192.168.1.200";
 
 bool isOperating = false;
+String receivedCommand = "";
 
 unsigned long previousTime = 0;
 const unsigned long interval = 1000;
@@ -41,14 +43,13 @@ void setup() {
 
 void loop() {
   if (isOperating) {
-    if (receivedCommand == "calibration" || receivedCommand.startsWith("calibrate_existing") || receivedCommand.startsWith("calibrate_now")) {
+    if (receivedCommand == "calibration") {
       performCalibration();
     } else if (receivedCommand == "monitoring") {
       startMonitoring();
     } else if (receivedCommand == "turn_on_motor") {
       turnOnMotor();
     }
-
     isOperating = false;
   } else {
     checkForCommands();
@@ -63,7 +64,6 @@ void sendDeviceInfo() {
   http.begin(url);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   int httpResponseCode = http.POST(data);
-
   if (httpResponseCode == HTTP_CODE_OK) {
     Serial.println("Device information sent successfully");
   } else {
@@ -77,13 +77,13 @@ void sendDeviceInfo() {
 void checkForCommands() {
   HTTPClient http;
 
-  String url = "http://" + String(serverIP) + ":" + String(serverPort) + deviceEndpoint;
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + choicesEndpoint;
 
   http.begin(url);
   int httpResponseCode = http.GET();
 
   if (httpResponseCode == HTTP_CODE_OK) {
-    String receivedCommand = http.getString();
+    receivedCommand = http.getString();
     Serial.print("Received command: ");
     Serial.println(receivedCommand);
 
@@ -107,53 +107,13 @@ void performCalibration() {
       previousTime = currentTime;
 
       readSensorValues();
-      mapFlexValuesToAngles();
-      sendAnglesToPHP();
+      sendSensorValuesCalibration();
 
       elapsedTime += interval;
     }
   }
 
   Serial.println("Calibration complete");
-}
-
-void readSensorValues() {
-  for (int i = 0; i < numFlexPins; i++) {
-    sensorValues[i] = analogRead(flexPins[i]);
-  }
-}
-
-void mapFlexValuesToAngles() {
-  for (int i = 0; i < numFlexPins; i++) {
-    angles[i] = map(sensorValues[i], minFlexValues[i], 1023, 0, 180);
-  }
-}
-
-void sendAnglesToPHP() {
-  HTTPClient http;
-
-  String url = "http://" + String(serverIP) + ":" + String(serverPort) + anglesEndpoint;
-
-  String data = "upperBack=" + String(angles[0]) +
-                "&middleBack=" + String(angles[1]) +
-                "&lowerBack=" + String(angles[2]) +
-                "&leftShoulder=" + String(angles[3]) +
-                "&rightShoulder=" + String(angles[4]) +
-                "&leftSide=" + String(angles[5]) +
-                "&rightSide=" + String(angles[6]);
-
-  http.begin(url);
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  int httpResponseCode = http.POST(data);
-
-  if (httpResponseCode == HTTP_CODE_OK) {
-    Serial.println("Angle data sent successfully");
-  } else {
-    Serial.print("Failed to send angle data. Error code: ");
-    Serial.println(httpResponseCode);
-  }
-
-  http.end();
 }
 
 void startMonitoring() {
@@ -165,8 +125,7 @@ void startMonitoring() {
       previousTime = currentTime;
 
       readSensorValues();
-      mapFlexValuesToAngles();
-      sendAnglesToPHP();
+      sendSensorValuesMonitoring();
 
       elapsedTime += interval;
     }
@@ -179,6 +138,66 @@ void turnOnMotor() {
   delay(2000);
   digitalWrite(motor, LOW);
   Serial.println("Motor turned off");
+}
+
+void readSensorValues() {
+  for (int i = 0; i < numFlexPins; i++) {
+    sensorValues[i] = analogRead(flexPins[i]);
+  }
+}
+
+void sendSensorValuesCalibration() {
+  HTTPClient http;
+
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + calibrationEndpoint;
+
+  String data = "";
+  for (int i = 0; i < numFlexPins; i++) {
+    if (i > 0) {
+      data += "&";
+    }
+    data += "sensor" + String(i) + "=" + String(sensorValues[i]);
+  }
+
+  http.begin(url);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  int httpResponseCode = http.POST(data);
+
+  if (httpResponseCode == HTTP_CODE_OK) {
+    Serial.println("Sensor data sent successfully");
+  } else {
+    Serial.print("Failed to send sensor data. Error code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
+void sendSensorValuesMonitoring() {
+  HTTPClient http;
+
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + monitoringEndpoint;
+
+  String data = "";
+  for (int i = 0; i < numFlexPins; i++) {
+    if (i > 0) {
+      data += "&";
+    }
+    data += "sensor" + String(i) + "=" + String(sensorValues[i]);
+  }
+
+  http.begin(url);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  int httpResponseCode = http.POST(data);
+
+  if (httpResponseCode == HTTP_CODE_OK) {
+    Serial.println("Sensor data sent successfully");
+  } else {
+    Serial.print("Failed to send sensor data. Error code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
 }
 
 void fetchMinFlexValues() {
