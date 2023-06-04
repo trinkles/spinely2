@@ -1,125 +1,73 @@
 <?php
-
-// Include the database connection file
+// Include the database.php file
 require_once 'database.php';
 
-// Handle the form submission if the button has been clicked
-if (isset($_POST['start_calibration'])) {
-  startCalibration();
-}
+// Arduino IP address and port
+$arduinoIP = '192.168.1.100';
+$arduinoPort = 80;
 
-echo '<button onclick="startCalibration()">Start Calibration</button>';
+// Handle the incoming Arduino data
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if the start_calibration button is clicked
+    if (isset($_POST['start_calibration'])) {
+        // Command to send to Arduino
+        $command = 'calibration';
 
-// Start the calibration process
-function startCalibration() {
-  global $conn;
+        // Create a cURL resource
+        $ch = curl_init();
 
-  // Create the calibration table if it doesn't exist
-  createCalibrationTable();
+        // Set the cURL options
+        curl_setopt($ch, CURLOPT_URL, "http://{$arduinoIP}:{$arduinoPort}/");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, ['command' => $command]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-  // Create the table for the posture name if it doesn't exist
-  $postureName = 'Sitting straight';
-  createPostureTable($postureName);
+        // Execute the cURL request
+        $response = curl_exec($ch);
 
-  // Send the command to Arduino for calibration
-  sendCalibrationCommand();
+        // Check for errors
+        if ($response === false) {
+            die('Failed to send command to Arduino: ' . curl_error($ch));
+        }
 
-  // Save the posture details to the calibration table
-  $query = "INSERT INTO calibration (posture_name) VALUES ('$postureName')";
-  $result = mysqli_query($conn, $query);
+        // Close the cURL resource
+        curl_close($ch);
 
-  if (!$result) {
-    die('Failed to start calibration: ' . mysqli_error($conn));
-  }
+        // Display the response from Arduino
+        echo 'Command sent to Arduino: ' . $command;
 
-  echo 'Calibration started for posture: ' . $postureName;
-}
+        // Retrieve the Arduino data
+        $sensorData = $_POST;
 
-// Create the calibration table if it doesn't exist
-function createCalibrationTable() {
-  global $conn;
+        // Store the raw sensor values in the calibration_raw table
+        $query = "INSERT INTO calibration_raw (posture_name, upper_back, middle_back, lower_back, left_shoulder, right_shoulder, left_side, right_side, timestamp)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-  $query = "CREATE TABLE IF NOT EXISTS calibration (
-              posture_id INT AUTO_INCREMENT PRIMARY KEY,
-              posture_name VARCHAR(50) NOT NULL,
-              timestamp_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              timestamp_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )";
+        $stmt = mysqli_prepare($conn, $query);
 
-  $result = mysqli_query($conn, $query);
+        $values = array_values($sensorData);
+        array_unshift($values, 'Sitting straight');
+        $types = str_repeat('i', count($values));
 
-  if (!$result) {
-    die('Failed to create calibration table: ' . mysqli_error($conn));
-  }
-}
+        mysqli_stmt_bind_param($stmt, $types, ...$values);
 
-// Create the table for a specific posture if it doesn't exist
-function createPostureTable($postureName) {
-    global $conn;
-  
-    $tableName = strtolower(str_replace(' ', '_', $postureName));
-  
-    $query = "CREATE TABLE IF NOT EXISTS $tableName (
-                upper_back FLOAT(8,2) NOT NULL,
-                middle_back FLOAT(8,2) NOT NULL,
-                lower_back FLOAT(8,2) NOT NULL,
-                left_shoulder FLOAT(8,2) NOT NULL,
-                right_shoulder FLOAT(8,2) NOT NULL,
-                left_side FLOAT(8,2) NOT NULL,
-                right_side FLOAT(8,2) NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-              )";
-  
-    $result = mysqli_query($conn, $query);
-  
-    if (!$result) {
-      die('Failed to create posture table: ' . mysqli_error($conn));
+        $result = mysqli_stmt_execute($stmt);
+
+        if (!$result) {
+            die('Failed to store raw sensor values: ' . mysqli_error($conn));
+        }
+
+        mysqli_stmt_close($stmt);
+
+        // Update the minimum and maximum angles in the calibration table
+        updateMinMaxAngles("Sitting straight", $sensorData);
+
+        echo 'Posture data updated successfully';
     }
-  }  
-
-// Send the calibration command to Arduino
-function sendCalibrationCommand() {
-    // Arduino IP address and port
-    $arduinoIP = '192.168.1.100';
-    $arduinoPort = 80;
-  
-    // Command to send to Arduino
-    $command = 'calibration';
-  
-    // Create a cURL resource
-    $ch = curl_init();
-  
-    // Set the cURL options
-    curl_setopt($ch, CURLOPT_URL, "http://{$arduinoIP}:{$arduinoPort}/");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $command);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  
-    // Execute the cURL request
-    $response = curl_exec($ch);
-  
-    // Check for errors
-    if ($response === false) {
-      die('Failed to send command to Arduino: ' . curl_error($ch));
-    }
-  
-    // Close the cURL resource
-    curl_close($ch);
-  
-    // Display the response from Arduino
-    echo 'Command sent to Arduino: ' . $command;
-  }  
-
+}
 ?>
 
-<script>
-  function startCalibration() {
-    // Submit the form to start the calibration
-    document.getElementById("calibrationForm").submit();
-  }
-</script>
-
-<!-- Display the start calibration button -->
-<form id="calibrationForm" method="POST">
-  <input type="hidden" name="start_calibration" value="true">
+<!-- HTML Form for starting calibration -->
+<form method="post">
+    <button type="submit" name="start_calibration">Start Calibration</button>
 </form>
