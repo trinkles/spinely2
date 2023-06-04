@@ -88,10 +88,10 @@ function createTableIfNotExists() {
               timestamp_connected DATETIME NOT NULL
             )";
 
-  $result = mysqli_query($connection, $query);
+  $result = mysqli_query($conn, $query);
 
   if (!$result) {
-    die('Failed to create devices table: ' . mysqli_error($connection));
+    die('Failed to create devices table: ' . mysqli_error($conn));
   }
 }
 
