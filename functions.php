@@ -62,7 +62,7 @@ function displayConnectedDevices() {
 
   // Check if there are any connected devices
   if (mysqli_num_rows($result) > 0) {
-    echo "<h3>Connected Devices:</h3>";
+    echo "<h3>Connected Device:</h3>";
     echo "<table>";
     echo "<tr><th>Device ID</th><th>Device Name</th><th>Device IP</th><th>Status</th></tr>";
 
