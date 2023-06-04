@@ -1,0 +1,32 @@
+body {
+    background-color: #F5F7FA;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  h1 {
+    color: #2979FF;
+  }
+  .duration-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+  .duration-buttons button {
+    padding: 12px 24px;
+    font-size: 20px;
+    border-radius: 5px;
+    background-color: #2979FF;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .duration-buttons button:first-child {
+    margin-top: 0;
+  }
+  .note {
+    font-size: 14px;
+    color: #777777;
+    margin-top: 5px;
+  }
