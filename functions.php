@@ -36,6 +36,8 @@ function saveDeviceInfo($deviceID, $deviceName, $deviceIP, $status, $timestamp) 
   // Create the table if it doesn't exist
   createTableIfNotExists();
 
+  global $conn; // Access the global database connection variable
+
   // Insert the device information into the table
   $query = "INSERT INTO devices (device_id, device_name, device_ip, status, timestamp_connected) 
             VALUES ('$deviceID', '$deviceName', '$deviceIP', '$status', '$timestamp')";
@@ -48,6 +50,8 @@ function saveDeviceInfo($deviceID, $deviceName, $deviceIP, $status, $timestamp) 
 
 // Display the connected devices
 function displayConnectedDevices() {
+  global $conn; // Access the global database connection variable
+
   // Fetch the connected devices from the database
   $query = "SELECT * FROM devices";
   $result = mysqli_query($conn, $query);
@@ -79,6 +83,8 @@ function displayConnectedDevices() {
 
 // Create the devices table if it doesn't exist
 function createTableIfNotExists() {
+  global $conn; // Access the global database connection variable
+
   $query = "CREATE TABLE IF NOT EXISTS devices (
               id INT AUTO_INCREMENT PRIMARY KEY,
               device_id VARCHAR(50) NOT NULL,
