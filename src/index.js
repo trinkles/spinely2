@@ -5,6 +5,7 @@ import App from './App';
 import History from './history';
 import Settings from './settings';
 import Login from './login';
+import Signup from './signup';
 import Calibration from './calibration';
 import Configure from './configure';
 import Calibrate from './calibrate';
@@ -24,6 +25,7 @@ ReactDOM.render(
     <Route path='/calibration'element={<Calibration/>}/>
     <Route path='/settings'element={<Settings/>}/>
     <Route path='/login'element={<Login/>}/>
+    <Route path='/signup'element={<Signup/>}/>
     <Route path='/configure'element={<Configure/>}/>
     <Route path='/calibrate'element={<Calibrate/>}/>
     <Route path='/calibrate5'element={<Calibrate5/>}/>
