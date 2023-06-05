@@ -1,9 +1,9 @@
 import React from 'react';
-import './styleindex.css';
+import './style.css';
 
 const Signup = () => {
   const handleSignup = () => {
-    window.location.href = "login.jsx";
+    window.location.href = "login";
   };
 
   return (
